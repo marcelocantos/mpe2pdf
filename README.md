@@ -52,6 +52,11 @@ mpe2pdf input.md output.pdf     # explicit output path
 mpe2pdf runs with script execution enabled in the mume engine, so embedded
 scripts in Markdown files will execute. Only convert files you trust.
 
+## Agent integration
+
+If you use an agentic coding tool, run `mpe2pdf --help-agent` or include
+[`agents-guide.md`](agents-guide.md) in your project context.
+
 ## License
 
 Apache 2.0 — see [LICENSE](LICENSE).
