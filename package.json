@@ -5,10 +5,10 @@
   "author": "Marcelo Cantos",
   "repository": {
     "type": "git",
-    "url": "https://github.com/marcelocantos/mpe2pdf.git"
+    "url": "git+https://github.com/marcelocantos/mpe2pdf.git"
   },
   "bin": {
-    "mpe2pdf": "./mpe2pdf.mjs"
+    "mpe2pdf": "mpe2pdf.mjs"
   },
   "type": "module",
   "license": "Apache-2.0",
