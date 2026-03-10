@@ -2,7 +2,7 @@
 
 ## 🎯T1 — Project is open-sourced and published on npm
 
-- **Status**: In progress
+- **Status**: Achieved (v0.1.0 released, not yet on npm)
 - **Desired state**: Public GitHub repo with README, LICENSE, and initial release on npm.
 
 ## 🎯T2 — Tests exist for CLI flag handling
