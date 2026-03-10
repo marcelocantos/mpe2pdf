@@ -1,0 +1,21 @@
+{
+  "name": "mpe2pdf",
+  "version": "0.1.0",
+  "description": "Convert Markdown to PDF via mume + Prince, matching VS Code Markdown Preview Enhanced output",
+  "author": "Marcelo Cantos",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/marcelocantos/mpe2pdf.git"
+  },
+  "bin": {
+    "mpe2pdf": "./mpe2pdf.mjs"
+  },
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@shd101wyy/mume": "^0.7.9"
+  }
+}
