@@ -100,6 +100,7 @@ async function main() {
   }
 
   console.log(outputPath);
+  process.exit(0);
 }
 
 main().catch((err) => {
