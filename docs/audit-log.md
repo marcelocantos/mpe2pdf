@@ -18,3 +18,9 @@ maintenance activities. Append-only — newest entries at the bottom.
 - **Commit**: `5bd99a3`
 - **Outcome**: Released v0.2.0 (npm package). Fixed process hang after PDF generation. Fixed package.json bin path and repo URL. Added .npmignore.
 - **Gates skipped**: tests-exist, ci-green, pr-workflow (same as v0.1.0)
+
+## 2026-03-16 — /release v0.3.0
+
+- **Commit**: `f8da162`
+- **Outcome**: Released v0.3.0 (npm package). Added batch file conversion support.
+- **Gates skipped**: tests-exist, ci-green, pr-workflow (same as v0.1.0)
