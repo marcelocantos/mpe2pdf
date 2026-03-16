@@ -22,6 +22,7 @@ conversion, producing high-quality typeset output.
 ```bash
 mpe2pdf report.md                    # produces report.pdf
 mpe2pdf report.md output.pdf         # explicit output path
+mpe2pdf ch1.md ch2.md ch3.md         # batch: produces ch1.pdf, ch2.pdf, ch3.pdf
 ```
 
 ## Security note

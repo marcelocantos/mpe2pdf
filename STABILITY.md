@@ -22,8 +22,8 @@ Snapshot as of v0.2.0.
 
 | Position | Meaning | Required | Stability |
 |---|---|---|---|
-| 1 | Input `.md` file path | Yes | **Stable** |
-| 2 | Output `.pdf` file path | No (defaults to input with `.pdf` extension) | **Stable** |
+| 1..N | Input `.md` file path(s) | Yes (at least one) | **Stable** |
+| last | Output `.pdf` file path | No (only with single input; defaults to input with `.pdf` extension) | **Stable** |
 
 ### Output behaviour
 
@@ -52,5 +52,4 @@ Snapshot as of v0.2.0.
 
 - Custom CSS/theme support
 - Watch mode
-- Batch conversion (multiple input files)
 - Non-Prince PDF backends

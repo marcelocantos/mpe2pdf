@@ -31,6 +31,7 @@ npx mpe2pdf input.md
 ```bash
 mpe2pdf input.md                # produces input.pdf
 mpe2pdf input.md output.pdf     # explicit output path
+mpe2pdf ch1.md ch2.md ch3.md    # batch: produces ch1.pdf, ch2.pdf, ch3.pdf
 ```
 
 ### Options

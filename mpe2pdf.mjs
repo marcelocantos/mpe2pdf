@@ -24,7 +24,7 @@ const mumeOut = path.resolve(
 mume.utility.setExtentensionDirectoryPath(mumeOut);
 
 function usage(stream = process.stdout) {
-  stream.write(`Usage: mpe2pdf [options] <input.md> [output.pdf]
+  stream.write(`Usage: mpe2pdf [options] <input.md...> [output.pdf]
 
 Convert Markdown to PDF using mume (Markdown Preview Enhanced engine) + Prince.
 
@@ -33,7 +33,8 @@ Options:
   --help-agent    Show help text and agent guide
   --version       Show version number
 
-If output.pdf is omitted, it defaults to the input filename with a .pdf extension.
+Multiple input files can be specified; each produces a .pdf alongside the source.
+An explicit output path is only allowed with a single input file.
 
 Requires Prince (https://www.princexml.com/) to be installed and on PATH.
 `);
@@ -69,19 +70,36 @@ if (positional.length < 1) {
   process.exit(1);
 }
 
-const inputPath = path.resolve(positional[0]);
-const outputPath = positional[1]
-  ? path.resolve(positional[1])
-  : inputPath.replace(/\.md$/, ".pdf");
+// Determine input files and optional explicit output path.
+// If the last positional arg ends in .pdf and there are at least 2 args,
+// treat it as an explicit output path (single-input mode only).
+let inputPaths;
+let explicitOutput = null;
 
-if (!fs.existsSync(inputPath)) {
-  console.error(`Error: file not found: ${inputPath}`);
-  process.exit(1);
+if (
+  positional.length >= 2 &&
+  positional[positional.length - 1].endsWith(".pdf")
+) {
+  if (positional.length > 2) {
+    console.error(
+      "Error: explicit output path is only allowed with a single input file",
+    );
+    process.exit(1);
+  }
+  inputPaths = [path.resolve(positional[0])];
+  explicitOutput = path.resolve(positional[1]);
+} else {
+  inputPaths = positional.map((p) => path.resolve(p));
 }
 
-async function main() {
-  await mume.init();
+for (const p of inputPaths) {
+  if (!fs.existsSync(p)) {
+    console.error(`Error: file not found: ${p}`);
+    process.exit(1);
+  }
+}
 
+async function convertOne(inputPath, outputPath) {
   const engine = new mume.MarkdownEngine({
     filePath: inputPath,
     config: {
@@ -100,6 +118,17 @@ async function main() {
   }
 
   console.log(outputPath);
+}
+
+async function main() {
+  await mume.init();
+
+  for (const inputPath of inputPaths) {
+    const outputPath =
+      explicitOutput || inputPath.replace(/\.md$/, ".pdf");
+    await convertOne(inputPath, outputPath);
+  }
+
   process.exit(0);
 }
 
