@@ -12,3 +12,9 @@ maintenance activities. Append-only — newest entries at the bottom.
   - No CI workflow
   - No `--no-scripts` opt-out flag
   - Output path edge case when input doesn't end in `.md`
+
+## 2026-03-16 — /release v0.2.0
+
+- **Commit**: `5bd99a3`
+- **Outcome**: Released v0.2.0 (npm package). Fixed process hang after PDF generation. Fixed package.json bin path and repo URL. Added .npmignore.
+- **Gates skipped**: tests-exist, ci-green, pr-workflow (same as v0.1.0)
