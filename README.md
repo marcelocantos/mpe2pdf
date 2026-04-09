@@ -40,7 +40,31 @@ mpe2pdf ch1.md ch2.md ch3.md    # batch: produces ch1.pdf, ch2.pdf, ch3.pdf
 |---|---|
 | `--help` | Show usage information |
 | `--help-agent` | Show usage + agent integration guide |
+| `--mcp` | Run as an MCP (Model Context Protocol) server on stdio |
 | `--version` | Print version number |
+
+## MCP Server Mode
+
+Run `mpe2pdf --mcp` to start a stdio-based
+[Model Context Protocol](https://modelcontextprotocol.io/) server, allowing AI
+agents to invoke PDF conversion as a tool.
+
+Add to your Claude Code config (`.mcp.json` or `~/.claude.json`):
+
+```json
+{
+  "mcpServers": {
+    "mpe2pdf": {
+      "command": "mpe2pdf",
+      "args": ["--mcp"]
+    }
+  }
+}
+```
+
+The server exposes a `convert` tool that accepts an array of file objects with
+`input` (required) and `output` (optional) paths. See
+[`agents-guide.md`](agents-guide.md) for full tool schema details.
 
 ## How it works
 
