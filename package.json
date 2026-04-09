@@ -16,6 +16,9 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@shd101wyy/mume": "^0.7.9"
+    "@cfworker/json-schema": "^4.1.1",
+    "@modelcontextprotocol/server": "^2.0.0-alpha.2",
+    "@shd101wyy/mume": "^0.7.9",
+    "zod": "^4.3.6"
   }
 }
