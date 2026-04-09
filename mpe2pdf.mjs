@@ -105,6 +105,7 @@ async function convertOne(inputPath, outputPath) {
     config: {
       princeExePath: "prince",
       enableScriptExecution: true,
+      breakOnSingleNewLine: false,
     },
   });
 
