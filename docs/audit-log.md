@@ -24,3 +24,9 @@ maintenance activities. Append-only — newest entries at the bottom.
 - **Commit**: `f8da162`
 - **Outcome**: Released v0.3.0 (npm package). Added batch file conversion support.
 - **Gates skipped**: tests-exist, ci-green, pr-workflow (same as v0.1.0)
+
+## 2026-04-09 — /release v0.4.0
+
+- **Commit**: `5962547`
+- **Outcome**: Released v0.4.0 (npm package). Added MCP server mode (`--mcp`), paragraph reflow (`breakOnSingleNewLine: false`), 11 smoke tests with PDF content verification. Updated README and STABILITY.md.
+- **Gates skipped**: ci-green, pr-workflow (no CI configured for npm package)

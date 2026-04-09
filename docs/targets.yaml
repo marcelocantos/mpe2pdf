@@ -1,0 +1,18 @@
+targets:
+  T1:
+    name: mpe2pdf exposes an MCP server mode for AI agent integration
+    status: achieved
+    value: 8.0
+    cost: 5.0
+    actual_cost: 3.0
+    acceptance:
+    - Running `mpe2pdf --mcp` starts a stdio-based MCP server
+    - The server exposes a convert tool that accepts markdown file path(s) and produces PDF(s)
+    - The MCP server follows the MCP protocol (JSON-RPC over stdio)
+    - Existing CLI mode is unaffected
+    context: AI agents (Claude Code, etc.) need to convert Markdown to PDF programmatically. An MCP server mode lets agents call mpe2pdf as a tool without shelling out.
+    tags:
+    - feature
+    origin: user request
+    discovered: 2026-04-09
+    achieved: 2026-04-09
