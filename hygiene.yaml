@@ -1,0 +1,484 @@
+# hygiene.yaml — declared, drift-validated hygiene posture for mpe2pdf.
+# Schema reference: the `hygiene` skill (~/.claude/skills/hygiene/SKILL.md).
+# Validate with `/hygiene`; aggregate the fleet with `/hygiene fleet`.
+# Sibling to bullseye.yaml: bullseye tracks aspirational state ("achieve X");
+# hygiene tracks steady-state ("we maintain X").
+#
+# Tiers are PER DIMENSION (schema v1). Held tier = highest T such that every
+# item in that dimension with tier <= T is satisfied. `floors` is the ratchet
+# (below floor => DRIFT). `aspires` is the gap horizon. `enforce` is intent-only.
+#
+# Honest snapshot: Node ESM CLI, local 11-test smoke suite (Prince-backed),
+# no .github/workflows, npm source package, GitHub secret scanning on.
+
+schema_version: 1
+
+repo: mpe2pdf
+aspires: 3
+floors:            # per-dimension held-tier ratchet; below floor => DRIFT
+  correctness: 1   # smoke suite + npm test script exist; no CI
+  security: 2      # package-lock.json + GitHub secret scanning / push protection
+  quality: 0       # no eslint/prettier
+  deps: 2          # package-lock.json committed; no Dependabot
+  release: 2       # MINOR-only git tags; no CHANGELOG / CI-built artifacts
+  governance: 2    # Apache-2.0 + README + .gitignore + squash-only
+  build: 1         # package.json engines/bin; no CI
+  docs: 1          # STABILITY.md + agents-guide.md; no docs-in-CI
+  perf: 0          # no benchmark suite
+  vcs: 1           # default branch is master; no protection / committed hooks
+  agent: 2         # CLAUDE.md + agents-guide + bullseye.yaml + --help-agent
+
+tiers:
+  1: baseline    # LICENSE + README + .gitignore; tests build & run
+  2: maintained  # matrix, lint/format, release + governance
+  3: hardened    # security scanning, SBOM/signing, fuzzing, perf
+
+items:
+
+  # ============================== CORRECTNESS =============================
+  - id: correctness.tests
+    dim: correctness
+    desc: package.json `npm test` runs node:test over test/**/*.test.mjs
+    state: present
+    cadence: continuous
+    enforce: blocking
+    tier: 1
+    evidence: {file: {path: package.json, matches: 'node --test'}}
+
+  - id: correctness.smoke-suite
+    dim: correctness
+    desc: test/smoke.test.mjs covers CLI flags, Markdown→PDF, and MCP convert
+    state: present
+    cadence: continuous
+    enforce: blocking
+    tier: 1
+    evidence: {file: {path: test/smoke.test.mjs, matches: 'Markdown to PDF conversion'}}
+
+  - id: correctness.ci
+    dim: correctness
+    desc: Smoke suite runs on every push/PR (GitHub Actions)
+    state: planned
+    cadence: continuous
+    enforce: blocking
+    tier: 2
+    reason: >-
+      No .github/workflows. npm test is local-only and needs Prince on PATH
+      (entropy audit ENT-002). Releases skip the ci-green gate.
+    evidence: {absent: {file: {path: .github/workflows}}}
+
+  - id: correctness.fuzz
+    dim: correctness
+    desc: Fuzz harnesses over Markdown/CLI/MCP input
+    state: skipped
+    cadence: continuous
+    enforce: informational
+    tier: 3
+    reason: >-
+      Parsing is delegated to mume; this repo has no in-tree parser. CLI/MCP
+      surfaces are covered by smokes, not fuzz targets.
+    evidence: {absent: {file: {path: test/fuzz.test.mjs}}}
+
+  # =========================== SECURITY / SUPPLY ==========================
+  - id: security.dep-pinning
+    dim: security
+    desc: package-lock.json is committed — reproducible, pinned npm graph
+    state: present
+    cadence: per-release
+    enforce: warning
+    tier: 2
+    evidence: {file: {path: package-lock.json}}
+
+  - id: security.secret-scan-github
+    dim: security
+    desc: GitHub secret scanning is enabled on the repo
+    state: enforced
+    cadence: once-must-hold
+    enforce: blocking
+    tier: 2
+    evidence:
+      {gh_setting: {key: security_and_analysis.secret_scanning.status, equals: enabled}}
+
+  - id: security.push-protection
+    dim: security
+    desc: Secret-scanning push protection is enabled
+    state: enforced
+    cadence: once-must-hold
+    enforce: blocking
+    tier: 2
+    evidence:
+      {gh_setting: {key: security_and_analysis.secret_scanning_push_protection.status, equals: enabled}}
+
+  - id: security.gitleaks
+    dim: security
+    desc: gitleaks scanner in pre-commit and/or CI
+    state: planned
+    cadence: continuous
+    enforce: informational
+    tier: 3
+    reason: Relying on GitHub native secret scanning; no gitleaks config or CI.
+    evidence: {absent: {scanner: {tool: gitleaks}}}
+
+  - id: security.npm-audit
+    dim: security
+    desc: npm audit (or osv-scanner) runs as a CI gate
+    state: planned
+    cadence: periodic:30d
+    enforce: warning
+    tier: 3
+    reason: >-
+      No audit job. Local npm audit reports 28 issues in the mume tree
+      (entropy audit ENT-003); Dependabot alerts are disabled.
+    evidence: {absent: {scanner: {tool: npm-audit}}}
+
+  - id: security.sast-codeql
+    dim: security
+    desc: CodeQL static analysis for JavaScript
+    state: planned
+    cadence: continuous
+    enforce: informational
+    tier: 3
+    reason: No CodeQL workflow; no .github/ at all.
+    evidence: {absent: {ci_job: "ci.yml#codeql"}}
+
+  - id: security.dependabot
+    dim: security
+    desc: Dependabot security updates / alerts enabled
+    state: planned
+    cadence: periodic:30d
+    enforce: warning
+    tier: 3
+    reason: Dependabot security updates are disabled; no .github/dependabot.yml.
+    evidence: {absent: {file: {path: .github/dependabot.yml}}}
+
+  - id: security.actions-perms
+    dim: security
+    desc: GitHub Actions default token permissions scoped to least privilege
+    state: planned
+    cadence: once-must-hold
+    enforce: warning
+    tier: 3
+    reason: No workflows yet, so there is no permissions block to scope.
+    evidence: {absent: {file: {path: .github/workflows}}}
+
+  - id: security.signed-releases
+    dim: security
+    desc: Published artifacts carry provenance / are signed (cosign/sigstore)
+    state: skipped
+    cadence: per-release
+    enforce: informational
+    tier: 3
+    reason: >-
+      npm source package (LICENSE, README, agents-guide, mpe2pdf.mjs,
+      package.json). No compiled release binaries to sign.
+    evidence: {absent: {ci_step: {workflow: release.yml, name: Sign}}}
+
+  - id: security.claude-ignored
+    dim: security
+    desc: .claude/ is gitignored so local agent settings cannot be staged
+    state: planned
+    cadence: once-must-hold
+    enforce: warning
+    tier: 3
+    reason: >-
+      .claude/ is untracked and unignored (entropy audit ENT-007). A
+      `git add .` would stage settings.local.json.
+    evidence: {absent: {file: {path: .gitignore, matches: '\\.claude'}}}
+
+  # ============================== CODE QUALITY ============================
+  - id: quality.lint
+    dim: quality
+    desc: ESLint (or equivalent) is configured and invoked
+    state: planned
+    cadence: continuous
+    enforce: warning
+    tier: 2
+    reason: No eslint.config.js / .eslintrc; 237-line single-file CLI, lint is by-hand.
+    evidence: {absent: {file: {path: eslint.config.js}}}
+
+  - id: quality.format
+    dim: quality
+    desc: Prettier (or equivalent) format check is a gate
+    state: planned
+    cadence: continuous
+    enforce: warning
+    tier: 2
+    reason: No .prettierrc or format script; formatting is by-hand convention.
+    evidence: {absent: {file: {path: .prettierrc}}}
+
+  # =========================== DEPENDENCY HEALTH ==========================
+  - id: deps.lockfile
+    dim: deps
+    desc: package-lock.json is committed so npm ci reproduces the graph
+    state: present
+    cadence: once-must-hold
+    enforce: warning
+    tier: 2
+    evidence: {file: {path: package-lock.json, matches: '"lockfileVersion"'}}
+
+  - id: deps.dependabot
+    dim: deps
+    desc: Dependabot (or equivalent) opens PRs for npm advisories
+    state: planned
+    cadence: periodic:30d
+    enforce: informational
+    tier: 3
+    reason: No .github/dependabot.yml; npm graph is reviewed by hand at release if at all.
+    evidence: {absent: {file: {path: .github/dependabot.yml}}}
+
+  # ========================== RELEASE & VERSIONING =======================
+  - id: release.package-version
+    dim: release
+    desc: package.json carries a semver version (SSoT for --version)
+    state: present
+    cadence: per-release
+    enforce: blocking
+    tier: 1
+    evidence:
+      file: {path: package.json, matches: '"version": "[0-9]+\.[0-9]+\.[0-9]+"'}
+
+  - id: release.semver-minor
+    dim: release
+    desc: Git tags are MINOR-only (vMAJOR.MINOR.0)
+    state: present
+    cadence: per-release
+    enforce: blocking
+    tier: 2
+    evidence:
+      command: test "$(git tag -l 'v*' | sed 's/.*\.//' | sort -u)" = "0"
+
+  - id: release.changelog
+    dim: release
+    desc: A maintained CHANGELOG records user-visible changes per release
+    state: planned
+    cadence: per-release
+    enforce: warning
+    tier: 3
+    reason: History lives in git + GitHub release notes + docs/audit-log.md; no CHANGELOG.md.
+    evidence: {absent: {file: {path: CHANGELOG.md}}}
+
+  - id: release.ci-built
+    dim: release
+    desc: Release artifacts are built by CI, never locally
+    state: skipped
+    cadence: per-release
+    enforce: informational
+    tier: 3
+    reason: >-
+      Source-only npm package; there is no compiled binary. Publish is
+      registry tarball of tracked JS, not a CI matrix build.
+    evidence: {absent: {ci_job: "release.yml#build"}}
+
+  # ============================ GOVERNANCE / META ========================
+  - id: governance.license
+    dim: governance
+    desc: Apache-2.0 LICENSE present
+    state: present
+    cadence: once-must-hold
+    enforce: blocking
+    tier: 1
+    evidence: {file: {path: LICENSE, matches: 'Apache License'}}
+
+  - id: governance.readme
+    dim: governance
+    desc: README present
+    state: present
+    cadence: once-must-hold
+    enforce: blocking
+    tier: 1
+    evidence: {file: {path: README.md}}
+
+  - id: governance.gitignore
+    dim: governance
+    desc: .gitignore covers node_modules/, generated PDFs, OS files
+    state: present
+    cadence: once-must-hold
+    enforce: warning
+    tier: 1
+    evidence: {file: {path: .gitignore, matches: 'node_modules/'}}
+
+  - id: governance.squash-only
+    dim: governance
+    desc: Repo is squash-merge only
+    state: enforced
+    cadence: once-must-hold
+    enforce: blocking
+    tier: 2
+    evidence: {gh_setting: {key: allow_merge_commit, equals: false}}
+
+  - id: governance.delete-branch
+    dim: governance
+    desc: Head branch is deleted on merge
+    state: enforced
+    cadence: once-must-hold
+    enforce: warning
+    tier: 2
+    evidence: {gh_setting: {key: delete_branch_on_merge, equals: true}}
+
+  - id: governance.security-md
+    dim: governance
+    desc: SECURITY.md documents the vulnerability-disclosure process
+    state: planned
+    cadence: once-must-hold
+    enforce: informational
+    tier: 3
+    reason: Public repo without a published disclosure policy yet.
+    evidence: {absent: {file: {path: SECURITY.md}}}
+
+  - id: governance.codeowners
+    dim: governance
+    desc: CODEOWNERS names reviewers for the tree
+    state: skipped
+    cadence: once-must-hold
+    enforce: informational
+    tier: 3
+    reason: Sole-owner repo; no CODEOWNERS file. Review is the owner, not a roster.
+    evidence: {absent: {file: {path: CODEOWNERS}}}
+
+  # ================================= BUILD ===============================
+  - id: build.package-manifest
+    dim: build
+    desc: package.json declares the mpe2pdf bin and Node >=18
+    state: present
+    cadence: once-must-hold
+    enforce: warning
+    tier: 1
+    evidence: {file: {path: package.json, matches: '"node": ">=18"'}}
+
+  - id: build.cli-entry
+    dim: build
+    desc: mpe2pdf.mjs is a shebang Node ESM CLI (no compile step)
+    state: present
+    cadence: once-must-hold
+    enforce: informational
+    tier: 1
+    evidence: {file: {path: mpe2pdf.mjs, matches: '^#!/usr/bin/env node'}}
+
+  - id: build.ci
+    dim: build
+    desc: CI workflows exist under .github/workflows
+    state: planned
+    cadence: continuous
+    enforce: warning
+    tier: 2
+    reason: No .github/ directory; no Makefile. Local path is npm test.
+    evidence: {absent: {file: {path: .github/workflows}}}
+
+  # ============================ DOCUMENTATION ============================
+  - id: docs.stability
+    dim: docs
+    desc: STABILITY.md records the shipped (not intended) contract
+    state: present
+    cadence: once-must-hold
+    enforce: informational
+    tier: 1
+    evidence: {file: {path: STABILITY.md}}
+
+  - id: docs.agents-guide
+    dim: docs
+    desc: agents-guide.md is the product-facing agent doc (read by --help-agent)
+    state: present
+    cadence: once-must-hold
+    enforce: informational
+    tier: 1
+    evidence: {file: {path: agents-guide.md}}
+
+  - id: docs.md-links
+    dim: docs
+    desc: Internal markdown links resolve in CI
+    state: planned
+    cadence: continuous
+    enforce: informational
+    tier: 3
+    reason: No markdown-link check script or CI step.
+    evidence: {absent: {file: {path: package.json, matches: 'check-md-links'}}}
+
+  # ============================== PERFORMANCE ===========================
+  - id: perf.benchmarks
+    dim: perf
+    desc: Benchmark suite exists
+    state: planned
+    cadence: per-release
+    enforce: informational
+    tier: 3
+    reason: Local CLI; conversion latency is dominated by mume+Prince, not measured here.
+    evidence: {absent: {file: {path: test/bench.test.mjs}}}
+
+  # ============================== VCS / HISTORY =========================
+  - id: vcs.default-branch
+    dim: vcs
+    desc: Default branch is master
+    state: enforced
+    cadence: once-must-hold
+    enforce: blocking
+    tier: 1
+    evidence: {gh_setting: {key: default_branch, equals: master}}
+
+  - id: vcs.branch-protection
+    dim: vcs
+    desc: master is protected and requires a green test job
+    state: planned
+    cadence: once-must-hold
+    enforce: warning
+    tier: 3
+    reason: Branch protection 404; there is no CI check to require.
+    evidence:
+      absent:
+        command: gh api repos/marcelocantos/mpe2pdf/branches/master/protection --jq .url
+
+  - id: vcs.pre-commit-hook
+    dim: vcs
+    desc: Committed git hooks (scripts/hooks) gate locally before commit
+    state: planned
+    cadence: once-must-hold
+    enforce: informational
+    tier: 3
+    reason: No scripts/hooks; core.hooksPath is the default .git/hooks.
+    evidence: {absent: {file: {path: scripts/hooks/pre-commit}}}
+
+  # =================== AGENT-READINESS / ONBOARDING ====================
+  - id: agent.claude-md
+    dim: agent
+    desc: CLAUDE.md present (project conventions discoverable by agents)
+    state: present
+    cadence: once-must-hold
+    enforce: warning
+    tier: 1
+    evidence: {file: {path: CLAUDE.md}}
+
+  - id: agent.agents-guide
+    dim: agent
+    desc: agents-guide.md present and served by --help-agent
+    state: present
+    cadence: once-must-hold
+    enforce: warning
+    tier: 1
+    evidence: {file: {path: mpe2pdf.mjs, matches: 'agents-guide.md'}}
+
+  - id: agent.cli-help
+    dim: agent
+    desc: CLI exposes --help-agent with the agent guide
+    state: present
+    cadence: once-must-hold
+    enforce: informational
+    tier: 1
+    evidence:
+      command: node mpe2pdf.mjs --help-agent | grep -qi 'Agent Guide'
+
+  - id: agent.bullseye
+    dim: agent
+    desc: bullseye.yaml present (convergence targets discoverable)
+    state: present
+    cadence: once-must-hold
+    enforce: informational
+    tier: 2
+    evidence: {file: {path: bullseye.yaml}}
+
+  - id: agent.agents-md
+    dim: agent
+    desc: AGENTS.md is the shared instruction source of truth
+    state: planned
+    cadence: once-must-hold
+    enforce: informational
+    tier: 3
+    reason: Instructions live in CLAUDE.md only; AGENTS.md is absent.
+    evidence: {absent: {file: {path: AGENTS.md}}}
